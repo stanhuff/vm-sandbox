@@ -36,3 +36,9 @@ Keep a retired-ID index in this directory so old issue and PR references can be 
 ## Cross-feature changes
 
 During issue refinement, identify existing requirements affected by the proposed change. Update affected requirements, references, and tests together in the PR so the active spec remains consistent. Refer to requirements by ID so references remain usable when files move.
+
+## Test coverage
+
+Target at least 90% aggregate statement coverage for maintained production code. Set up CI coverage reporting with the first implementation PR and check the target on every PR. Use unit and integration tests to cover behavior, including denial cases, quota boundaries, concurrency, and failure recovery as those features land.
+
+If the target cannot reasonably be met, document the specific gap and reason in the PR. Keep exclusions narrow and visible in CI. Make any temporary lower threshold explicit and raise it as coverage improves until it reaches 90%.
