@@ -1,0 +1,20 @@
+name: Test
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go build ./...
+      - name: Test and check coverage
+        run: |
+          go test -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out | tee coverage.txt
+          awk '/^total:/ { found=1; if (($NF+0) < 90) exit 1 } END { if (!found) exit 1 }' coverage.txt
