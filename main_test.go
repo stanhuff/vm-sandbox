@@ -19,6 +19,9 @@ func TestSandboxInfoOverStdio(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	config := t.TempDir()
+	if err := os.WriteFile(filepath.Join(config, "README.txt"), []byte("operator notes"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	sockets, err := os.MkdirTemp("", "vms-")
 	if err != nil {
 		t.Fatal(err)
