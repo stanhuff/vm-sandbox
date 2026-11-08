@@ -2,7 +2,7 @@
 
 The first development slice connects an MCP client to a configured sandbox and reports its identity.
 
-Build on Linux with Go using `go build -o vm-sandbox .`. Run the tests with `go test -race ./...`.
+In VS Code, select **Dev Containers: Reopen in Container**. The image includes Go and the C toolchain used by the race detector. From the container terminal, run `go test -race ./...` or build with `go build -o vm-sandbox .`.
 
 Create an operator-controlled config directory and socket root. Place one TOML file per sandbox in the config directory. For example, `appa-dev.toml` defines the sandbox `appa-dev` and can be empty. IDs use lowercase ASCII letters, digits, and hyphens, start with a letter or digit, and have at most 32 characters.
 
