@@ -27,3 +27,15 @@ jobs:
         run: |
           docker build -t vm-sandbox-dev -f .devcontainer/Dockerfile .devcontainer
           docker run --rm --user developer -v "${PWD}:/workspace:ro" -w /workspace vm-sandbox-dev go test -race ./...
+      - name: Build Debian package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential debhelper
+          scripts/build-package
+      - name: Verify package install and removal
+        run: scripts/test-package dist/vm-sandbox_*.deb
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vm-sandbox-deb
+          path: dist/*.deb

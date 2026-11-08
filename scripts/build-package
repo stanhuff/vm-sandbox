@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+root=$PWD
+build=$(mktemp -d)
+trap 'rm -rf "$build"' EXIT
+mkdir "$build/source"
+git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$build/source"
+(cd "$build/source" && dpkg-buildpackage -b -us -uc)
+mkdir -p "$root/dist"
+cp "$build"/vm-sandbox_*.deb "$root/dist/"

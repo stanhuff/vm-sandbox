@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+package=$(realpath "$1")
+sudo apt-get install -y "$package"
+trap 'sudo apt-get purge -y vm-sandbox' EXIT
+sudo test -d /etc/vm-sandbox/sandboxes.d
+sudo touch /etc/vm-sandbox/sandboxes.d/package-test.toml
+trap 'sudo rm -f /etc/vm-sandbox/sandboxes.d/package-test.toml; sudo apt-get purge -y vm-sandbox' EXIT
+sudo systemctl restart vm-sandbox
+sudo systemctl is-active --quiet vm-sandbox
+for attempt in {1..50}; do
+    if sudo test -S /run/vm-sandbox/package-test/control.sock; then
+        break
+    fi
+    sleep 0.1
+done
+sudo python3 - <<'PY'
+import json
+import socket
+
+with socket.socket(socket.AF_UNIX) as client:
+    client.settimeout(5)
+    client.connect("/run/vm-sandbox/package-test/control.sock")
+    with client.makefile() as response:
+        assert json.load(response) == {"id": "package-test"}
+PY
+sudo dpkg -i "$package"
+sudo systemctl is-active --quiet vm-sandbox
+sudo test -f /etc/vm-sandbox/sandboxes.d/package-test.toml
+sudo apt-get remove -y vm-sandbox
+! systemctl is-active --quiet vm-sandbox
+sudo test -f /etc/vm-sandbox/sandboxes.d/package-test.toml
