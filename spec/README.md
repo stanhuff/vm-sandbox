@@ -2,6 +2,8 @@
 
 This directory defines the product behavior and operator contracts. Group requirements by topic and split files as they grow. Give each rule one authoritative home and link to its ID from related requirements, issues, and tests.
 
+Use the [glossary](glossary.md) for shared terms in requirements, stories, and tests.
+
 ## Requirements and design decisions
 
 Keep the spec small. Give a behavior a requirement ID when changing it would warrant review as a product change. Leave other behavior open to implementation judgment. A story describes a user goal and tracks work toward it. The requirements it adds or changes continue to govern the product after the story closes.
