@@ -1,0 +1,13 @@
+Source: vm-sandbox
+Section: admin
+Priority: optional
+Maintainer: vm-sandbox contributors <stanhuff@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13)
+Rules-Requires-Root: no
+
+Package: vm-sandbox
+Architecture: linux-any
+Depends: ${misc:Depends}
+Description: sandbox-scoped VM tooling for development containers
+ Host service and stdio MCP adapter for connecting development tools to
+ operator-configured sandboxes.
