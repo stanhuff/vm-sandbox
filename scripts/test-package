@@ -8,6 +8,12 @@ sudo touch /etc/vm-sandbox/sandboxes.d/package-test.toml
 trap 'sudo rm -f /etc/vm-sandbox/sandboxes.d/package-test.toml; sudo apt-get purge -y vm-sandbox' EXIT
 sudo systemctl restart vm-sandbox
 sudo systemctl is-active --quiet vm-sandbox
+for attempt in {1..50}; do
+    if sudo test -S /run/vm-sandbox/package-test/control.sock; then
+        break
+    fi
+    sleep 0.1
+done
 sudo python3 - <<'PY'
 import json
 import socket

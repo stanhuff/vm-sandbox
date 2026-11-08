@@ -13,8 +13,8 @@ By default, only the daemon's host UID can connect. To grant access to a group, 
 ## Ubuntu package
 
 Download the `vm-sandbox-deb` artifact from a successful GitHub Actions run, or run
-`dpkg-buildpackage -b -us -uc` inside the VS Code devcontainer. The local build
-writes the package one directory above the checkout.
+`scripts/build-package` inside the VS Code devcontainer. The local build writes
+the package under `dist/`.
 
 Install the extracted package on the Ubuntu VM host with
 `sudo apt install ./vm-sandbox_0.1.0_amd64.deb` (use the filename for your architecture).
