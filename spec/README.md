@@ -1,6 +1,18 @@
 # Product specification
 
-This directory defines the product behavior and operator contracts. Group requirements by topic and split files as they grow. Give each rule one authoritative home and link to its ID from related requirements, issues, and tests. Keep implementation decisions under `design/`.
+This directory defines the product behavior and operator contracts. Group requirements by topic and split files as they grow. Give each rule one authoritative home and link to its ID from related requirements, issues, and tests.
+
+## Requirements and design decisions
+
+Keep the spec small. Give a behavior a requirement ID when changing it would warrant review as a product change. Leave other behavior open to implementation judgment. A story describes a user goal and tracks work toward it. The requirements it adds or changes continue to govern the product after the story closes.
+
+The AI may draft requirements from the story and make routine design choices. Record a design decision under `design/` when future work should reuse it and the code alone leaves room for inconsistent choices. State the choice and why it was made, and link to any requirements it supports. Use a short architecture decision record when the rationale or tradeoffs matter. Design decisions can evolve as long as the implementation continues to satisfy the active requirements. Routine choices can live in code and tests.
+
+## Early review
+
+During refinement, flag a requirement as `review-early` when getting it wrong now would make a future change expensive. Add one sentence explaining what would need to be redesigned, rewritten, or migrated. Focus on the cost of changing the underlying decision, including compatibility and data migration where relevant. Leave routine requirements unmarked.
+
+When a new requirement adds dependencies that make an existing decision expensive to reverse, flag the affected requirement in the same PR. The flag can change without replacing the requirement ID.
 
 ## Requirement IDs
 
