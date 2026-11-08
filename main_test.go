@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,7 +16,7 @@ import (
 )
 
 func TestSandboxInfoOverStdio(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	config := t.TempDir()
 	sockets, err := os.MkdirTemp("", "vms-")
@@ -65,21 +67,37 @@ func TestSandboxInfoOverStdio(t *testing.T) {
 				}
 			}()
 
-			client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "0"}, nil)
-			session, err := client.Connect(ctx, &mcp.IOTransport{Reader: clientIn, Writer: clientOut}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer session.Close()
-			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "sandbox_info"})
-			if err != nil {
-				t.Fatal(err)
-			}
-			info, ok := result.StructuredContent.(map[string]any)
-			if result.IsError || !ok || info["id"] != id {
-				t.Fatalf("expected sandbox %s, got %+v", id, result)
-			}
+			assertSandboxInfo(t, ctx, &mcp.IOTransport{Reader: clientIn, Writer: clientOut}, id)
 		})
+		if binary := os.Getenv("VM_SANDBOX_CONTAINER_TEST_BINARY"); binary != "" {
+			t.Run(id+"/container", func(t *testing.T) {
+				cmd := exec.CommandContext(ctx, "docker", "run", "--rm", "-i",
+					"--user", fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
+					"-v", binary+":/vm-sandbox:ro",
+					"-v", filepath.Dir(socket)+":/sandbox:ro",
+					"alpine:3.22", "/vm-sandbox", "mcp", "/sandbox/control.sock")
+				cmd.Stderr = os.Stderr
+				assertSandboxInfo(t, ctx, &mcp.CommandTransport{Command: cmd}, id)
+			})
+		}
+	}
+}
+
+func assertSandboxInfo(t *testing.T, ctx context.Context, transport mcp.Transport, id string) {
+	t.Helper()
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "0"}, nil)
+	session, err := client.Connect(ctx, transport, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "sandbox_info"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, ok := result.StructuredContent.(map[string]any)
+	if result.IsError || !ok || info["id"] != id {
+		t.Fatalf("expected sandbox %s, got %+v", id, result)
 	}
 }
 
@@ -174,5 +192,57 @@ func TestReadSandboxFailures(t *testing.T) {
 	}()
 	if _, err := readSandbox(context.Background(), path); err == nil {
 		t.Fatal("missing sandbox ID unexpectedly succeeded")
+	}
+}
+
+func TestDaemonCannotStartWithoutSocketRoot(t *testing.T) {
+	config := t.TempDir()
+	if err := os.WriteFile(filepath.Join(config, "alpha.toml"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := serve(context.Background(), config, filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("expected missing socket root to fail")
+	}
+}
+
+func TestMainWithClosedMCPInput(t *testing.T) {
+	input, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+	output, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer output.Close()
+
+	args, stdin, stdout := os.Args, os.Stdin, os.Stdout
+	defer func() { os.Args, os.Stdin, os.Stdout = args, stdin, stdout }()
+	os.Args = []string{"vm-sandbox", "mcp", "unused.sock"}
+	os.Stdin, os.Stdout = input, output
+	main()
+}
+
+func TestCanceledMCPServer(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	in, writer := io.Pipe()
+	defer writer.Close()
+	out, reader := io.Pipe()
+	defer out.Close()
+	if err := run(ctx, []string{"mcp", "unused.sock"}, in, reader); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestListenRejectsOverlongSocketPath(t *testing.T) {
+	root := filepath.Join(t.TempDir(), strings.Repeat("x", 110))
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if listener, err := listenSandbox(root, "alpha", sandboxConfig{}); err == nil {
+		listener.Close()
+		t.Fatal("overlong socket path unexpectedly succeeded")
 	}
 }

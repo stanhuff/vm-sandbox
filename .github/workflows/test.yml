@@ -18,3 +18,8 @@ jobs:
           go test -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out | tee coverage.txt
           awk '/^total:/ { found=1; if (($NF+0) < 90) exit 1 } END { if (!found) exit 1 }' coverage.txt
+      - name: Verify the bind mount from a container
+        run: |
+          CGO_ENABLED=0 go build -o /tmp/vm-sandbox .
+          docker pull alpine:3.22
+          VM_SANDBOX_CONTAINER_TEST_BINARY=/tmp/vm-sandbox go test -run '^TestSandboxInfoOverStdio$' -count=1 ./...

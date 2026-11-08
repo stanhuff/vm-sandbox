@@ -45,8 +45,8 @@ func loadSandboxes(dir string) (map[string]sandboxConfig, error) {
 		if err := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields().Decode(&config); err != nil {
 			return nil, fmt.Errorf("%s: %w", entry.Name(), err)
 		}
-		if config.SocketGID != nil && *config.SocketGID < 0 {
-			return nil, fmt.Errorf("%s: socket_gid must be nonnegative", entry.Name())
+		if config.SocketGID != nil && (*config.SocketGID < 0 || uint64(*config.SocketGID) >= 1<<32-1) {
+			return nil, fmt.Errorf("%s: socket_gid is outside the valid range", entry.Name())
 		}
 		sandboxes[id] = config
 	}
