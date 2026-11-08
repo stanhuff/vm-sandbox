@@ -4,7 +4,7 @@
 	dh $@
 
 override_dh_auto_build:
-	CGO_ENABLED=0 go build -trimpath -o vm-sandbox .
+	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o vm-sandbox .
 
 override_dh_auto_test:
 	go test -race ./...
